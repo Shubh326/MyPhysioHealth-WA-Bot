@@ -5,7 +5,10 @@ services:
     plan: starter            # change to "free" if you want zero cost (data wiped on restart)
     region: singapore        # closest Render region to Delhi
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn app:app --workers 2 --bind 0.0.0.0:$PORT --timeout 60
+    # 1 worker so the in-memory user_sessions dict is shared across all requests.
+    # Threads handle Twilio concurrency. If you ever scale beyond ~50 concurrent
+    # chats, move user_sessions to Redis / a DB before increasing workers.
+    startCommand: gunicorn app:app --workers 1 --threads 4 --bind 0.0.0.0:$PORT --timeout 60
     autoDeploy: true
     healthCheckPath: /health
     disk:
