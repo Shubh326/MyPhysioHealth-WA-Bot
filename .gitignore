@@ -1,0 +1,17 @@
+# Secrets / credentials
+.env
+gcal-credentials.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# OS
+.DS_Store
+
+# Local data
+appointments.json
