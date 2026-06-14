@@ -33,6 +33,14 @@ except Exception as _gcal_err:
     print(f"[gcal] Disabled: {_gcal_err}")
     gcal_create_event = None
 
+# Optional: Google Sheets lead logging. Imported lazily so a missing/
+# misconfigured install never blocks the bot from running.
+try:
+    from sheets import append_lead as sheets_append_lead
+except Exception as _sheets_err:
+    print(f"[sheets] Disabled: {_sheets_err}")
+    sheets_append_lead = None
+
 app = Flask(__name__)
 
 # ---------------------------------------------------------------------------
@@ -536,6 +544,14 @@ def handle_message(phone, incoming_msg):
                 appointments[phone] = []
             appointments[phone].append(booking)
             save_appointments()
+
+            # Log the lead to Google Sheets (includes calendar/meet links if
+            # they were generated above). Best-effort: never blocks a booking.
+            if sheets_append_lead is not None:
+                try:
+                    sheets_append_lead(booking, patient_phone=phone)
+                except Exception as e:
+                    print(f"[sheets] sync failed: {e}")
 
             reset_session(phone)
             return get_booking_confirmation(booking)

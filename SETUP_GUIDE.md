@@ -94,6 +94,7 @@ Send "Hi" to the Twilio sandbox number on WhatsApp. You should see the main menu
    - `GOOGLE_CREDENTIALS_JSON`  (open `gcal-credentials.json` in TextEdit, copy ALL contents, paste as the value)
    - `DOCTOR_EMAIL`
    - `CLINIC_MEET_LINK`
+   - `GOOGLE_SHEET_ID`  (only if you set up lead logging — see below)
 5. Wait for the build → you get a permanent URL like `https://myphysio-whatsapp-bot.onrender.com`.
 6. Confirm `https://<your-url>/health` returns `{"status": "running", ...}`.
 
@@ -116,11 +117,39 @@ Send "Hi" to the Twilio sandbox number on WhatsApp. You should see the main menu
 2. Update the clinic's Google Business Profile, Google Ads, website, and printed material with the new WhatsApp number.
 3. Set up a daily backup of `appointments.json` (download via Render shell or migrate to Postgres later).
 
+## Optional: Log leads to a Google Sheet
+
+Every confirmed booking can be appended as a row to a Google Sheet for tracking.
+This reuses the **same service account** already used for Calendar — no new
+credentials needed.
+
+1. In the **same GCP project** as Calendar, enable the **Google Sheets API**.
+2. Create a Google Sheet (e.g. "MyphysioHealth Leads").
+3. Click **Share** and add the service account email — this is the
+   `client_email` value inside `gcal-credentials.json`
+   (looks like `...@...iam.gserviceaccount.com`). Give it **Editor** access.
+4. Copy the spreadsheet ID from the URL
+   `https://docs.google.com/spreadsheets/d/<SHEET_ID>/edit` and set it in `.env`:
+   ```
+   GOOGLE_SHEET_ID=<SHEET_ID>
+   GOOGLE_SHEET_TAB=Sheet1          # change if your tab has a different name
+   ```
+5. (On Render, add `GOOGLE_SHEET_ID` to the Environment tab too.)
+6. Restart the bot and make a test booking. The header row is created
+   automatically on the first append. Columns logged:
+
+   `Booked At | Name | Phone | Service | Date | Time | Mode | Status | Source | Calendar Link | Meet Link`
+
+If `GOOGLE_SHEET_ID` is left blank, lead logging is silently skipped — bookings
+still work normally.
+
 ## File Structure
 
 ```
 WhatsApp Chat Bot/
 ├── app.py              # Main bot application
+├── gcal.py             # Google Calendar event creation
+├── sheets.py           # Google Sheets lead logging
 ├── config.py           # Clinic details & configuration (EDIT THIS)
 ├── requirements.txt    # Python dependencies
 ├── .env.example        # Environment variable template
