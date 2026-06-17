@@ -17,6 +17,7 @@ import os
 import json
 import re
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
 from dotenv import load_dotenv
@@ -77,7 +78,7 @@ load_appointments()
 # ---------------------------------------------------------------------------
 
 def get_greeting():
-    hour = datetime.now().hour
+    hour = now_ist().hour
     if hour < 12:
         return "Good Morning"
     elif hour < 17:
@@ -183,6 +184,16 @@ def get_contact_info():
 # starting in less than this window.
 BOOKING_LEAD_TIME = timedelta(minutes=30)
 
+# Clinic operates in India Standard Time. The server clock may be UTC, so all
+# "now" calculations must be anchored to IST. Returns a *naive* IST wall-clock
+# datetime so it compares directly with the naive datetimes parsed from slot
+# strings (e.g. "14:00").
+CLINIC_TZ = ZoneInfo(os.environ.get("CLINIC_TIMEZONE", "Asia/Kolkata"))
+
+
+def now_ist():
+    return datetime.now(CLINIC_TZ).replace(tzinfo=None)
+
 
 def _today_has_remaining_slots(today_date):
     """True if today still has at least one bookable slot (after lead-time buffer)."""
@@ -190,7 +201,7 @@ def _today_has_remaining_slots(today_date):
         SATURDAY_SLOTS[:] if today_date.strftime("%A") == "Saturday"
         else APPOINTMENT_SLOTS[:]
     )
-    now = datetime.now()
+    now = now_ist()
     for s in all_slots:
         slot_dt = datetime.strptime(
             f"{today_date.strftime('%Y-%m-%d')} {s}", "%Y-%m-%d %H:%M"
@@ -203,7 +214,7 @@ def _today_has_remaining_slots(today_date):
 def get_available_dates():
     """Return the next 7 available (open) dates, including today if slots remain."""
     dates = []
-    today = datetime.now().date()
+    today = now_ist().date()
     for i in range(0, 15):  # look ahead from today to find 7 open ones
         d = today + timedelta(days=i)
         day_name = d.strftime("%A")
@@ -219,7 +230,7 @@ def get_available_dates():
 
 
 def format_date_options(dates):
-    today = datetime.now().date()
+    today = now_ist().date()
     msg = "📅 *Choose a Date:*\n\n"
     for i, d in enumerate(dates, 1):
         day_name = d.strftime("%A")
@@ -239,8 +250,8 @@ def get_slots_for_date(chosen_date):
         all_slots = APPOINTMENT_SLOTS[:]
 
     # If today, drop slots that are already starting (or within lead time)
-    if chosen_date == datetime.now().date():
-        now = datetime.now()
+    if chosen_date == now_ist().date():
+        now = now_ist()
         all_slots = [
             s for s in all_slots
             if datetime.strptime(
@@ -321,7 +332,7 @@ def get_booking_confirmation(booking):
 def get_my_appointments(phone):
     """Show upcoming appointments for this user."""
     user_bookings = appointments.get(phone, [])
-    today_str = datetime.now().strftime("%Y-%m-%d")
+    today_str = now_ist().strftime("%Y-%m-%d")
     upcoming = [b for b in user_bookings if b["date"] >= today_str]
 
     if not upcoming:
@@ -523,7 +534,7 @@ def handle_message(phone, incoming_msg):
                 "service": session["data"]["service"],
                 "date": session["data"]["date"],
                 "time": session["data"]["time"],
-                "booked_at": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                "booked_at": now_ist().strftime("%Y-%m-%d %H:%M:%S"),
             }
 
             # Push to Google Calendar BEFORE confirming so we can include the
@@ -589,7 +600,7 @@ def webhook():
     # Clean phone number (remove 'whatsapp:' prefix for storage)
     phone = sender.replace("whatsapp:", "")
 
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] From {phone}: {incoming_msg}")
+    print(f"[{now_ist().strftime('%H:%M:%S')}] From {phone}: {incoming_msg}")
 
     # Process message and get response
     response_text = handle_message(phone, incoming_msg)
@@ -599,7 +610,7 @@ def webhook():
     msg = resp.message()
     msg.body(response_text)
 
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Reply sent to {phone}")
+    print(f"[{now_ist().strftime('%H:%M:%S')}] Reply sent to {phone}")
     return str(resp)
 
 

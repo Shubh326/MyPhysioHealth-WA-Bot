@@ -30,3 +30,5 @@ services:
       #   GOOGLE_CREDENTIALS_JSON   (paste the full JSON file contents)
       #   DOCTOR_EMAIL
       #   CLINIC_MEET_LINK
+      #   GOOGLE_SHEET_ID
+      #   GOOGLE_SHEET_GID
