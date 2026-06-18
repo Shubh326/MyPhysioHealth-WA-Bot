@@ -73,17 +73,18 @@ SERVICES = {
 }
 # Weekly schedule (True = open, False = closed)
 TIMINGS = {
-    "Monday":    {"open": True, "hours": "10:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
-    "Tuesday":   {"open": True, "hours": "10:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
-    "Wednesday": {"open": True, "hours": "10:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
-    "Thursday":  {"open": True, "hours": "10:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
-    "Friday":    {"open": True, "hours": "10:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
-    "Saturday":  {"open": True, "hours": "10:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
+    "Monday":    {"open": True, "hours": "9:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
+    "Tuesday":   {"open": True, "hours": "9:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
+    "Wednesday": {"open": True, "hours": "9:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
+    "Thursday":  {"open": True, "hours": "9:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
+    "Friday":    {"open": True, "hours": "9:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
+    "Saturday":  {"open": True, "hours": "9:00 AM - 7:00 PM (Lunch: 1:00 - 2:00 PM)"},
     "Sunday":    {"open": False, "hours": "Closed"},
 }
 
 # Available appointment slots (24hr, 30-min sessions). Lunch break 13:00–14:00.
 APPOINTMENT_SLOTS = [
+    "09:00", "09:30",
     "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
     "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
     "17:00", "17:30", "18:00", "18:30",
@@ -91,6 +92,7 @@ APPOINTMENT_SLOTS = [
 
 # Saturday uses the same schedule
 SATURDAY_SLOTS = [
+    "09:00", "09:30",
     "10:00", "10:30", "11:00", "11:30", "12:00", "12:30",
     "14:00", "14:30", "15:00", "15:30", "16:00", "16:30",
     "17:00", "17:30", "18:00", "18:30",
