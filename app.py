@@ -20,11 +20,35 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from flask import Flask, request
 from twilio.twiml.messaging_response import MessagingResponse
+from twilio.request_validator import RequestValidator
 from dotenv import load_dotenv
 
 from config import CLINIC, SERVICES, TIMINGS, FAQS, APPOINTMENT_SLOTS, SATURDAY_SLOTS, EXERCISE_TIPS
 
 load_dotenv()
+
+# Verifies that incoming /webhook requests actually came from Twilio (checks
+# the X-Twilio-Signature header against TWILIO_AUTH_TOKEN). Without this,
+# anyone who finds the webhook URL could POST fake messages and puppet the
+# bot. Falls back to allowing requests when no auth token is configured, so
+# local dev still works before .env is filled in.
+TWILIO_AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN", "")
+_twilio_validator = RequestValidator(TWILIO_AUTH_TOKEN) if TWILIO_AUTH_TOKEN else None
+
+
+def is_valid_twilio_request(req):
+    if _twilio_validator is None:
+        print("[security] WARNING: TWILIO_AUTH_TOKEN not set — skipping webhook signature check.")
+        return True
+    signature = req.headers.get("X-Twilio-Signature", "")
+    # Render (and most PaaS) terminate TLS and forward over plain HTTP, so
+    # req.url can come back as http:// even though Twilio signed the https://
+    # URL it actually called. Reconstruct it from the forwarded proto header
+    # so validation doesn't fail behind the proxy.
+    url = req.url
+    if req.headers.get("X-Forwarded-Proto", "").lower() == "https" and url.startswith("http://"):
+        url = "https://" + url[len("http://"):]
+    return _twilio_validator.validate(url, req.form, signature)
 
 # Optional: Google Calendar sync. Imported lazily so a missing/misconfigured
 # install never blocks the bot from running.
@@ -594,6 +618,10 @@ def home():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     """Twilio sends incoming WhatsApp messages here."""
+    if not is_valid_twilio_request(request):
+        print("[security] Rejected /webhook request with invalid Twilio signature.")
+        return ("Forbidden", 403)
+
     incoming_msg = request.values.get("Body", "").strip()
     sender = request.values.get("From", "")
 
